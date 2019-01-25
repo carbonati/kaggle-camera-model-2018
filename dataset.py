@@ -10,6 +10,7 @@ TTA_COUNT = 11
 class CameraDataset(Dataset):
     def __init__(self, path, augmentor, extend_dataset=False):        
         self.df = pd.read_csv(path)
+        self.df = self.df.iloc[0:35]
         self.files = list(self.df['image_path'])
         self.labels = list(self.df['label'].astype(int))
         
@@ -23,9 +24,9 @@ class CameraDataset(Dataset):
             self.labels = []
             self.manip_labels = []
             for i in range(len(_files)):
-                files.extend([_files[i]] * TTA_COUNT)
-                labels.extend([_labels[i]] * TTA_COUNT)
-                manip_labels.extend(list(range(TTA_COUNT)))
+                self.files.extend([_files[i]] * TTA_COUNT)
+                self.labels.extend([_labels[i]] * TTA_COUNT)
+                self.manip_labels.extend(list(range(TTA_COUNT)))
                 
         self.augmentor = augmentor
     

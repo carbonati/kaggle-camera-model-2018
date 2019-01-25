@@ -19,6 +19,7 @@ def train_test_even_split(path_in, train_frac=0.9, shuffle=False, path_out=''):
     df = pd.DataFrame()
 
     for label, dir_fn in enumerate(os.listdir(path_in)):
+        # place some encoder here for dir_fn -> label
         dir_fp = os.path.join(path_in, dir_fn)
         files = [os.path.join(dir_fp, fn) for fn in os.listdir(dir_fp)]
         df_tmp = pd.DataFrame({'image_path': files, 'label': label})
@@ -44,3 +45,15 @@ def train_test_even_split(path_in, train_frac=0.9, shuffle=False, path_out=''):
     # save cv dataframes to disk
     df_train.to_csv(train_fp, index=False)
     df_val.to_csv(val_fp, index=False)
+
+
+def prep_test_data(src_dir, test_dir):
+    TEST_PATH = os.path.join(src_dir, test_dir)
+    filenames = os.listdir(TEST_PATH)
+    files = [os.path.join(TEST_PATH, fn) for fn in filenames]
+
+    df = pd.DataFrame({'path': files, 'label': np.nan})
+    
+    test_data_fn = 'test.csv'
+    test_data_fp = os.path.join(src_dir, test_data_fn)
+    df.to_csv(test_data_fp, index=False)
