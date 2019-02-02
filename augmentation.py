@@ -32,7 +32,8 @@ class CameraAugmentor:
             self.manip_ls.append(lambda img: self.gamma_manip(img, gamma))
             
         self.transform = CameraAugmentor.get_transforms()
-        
+    
+
     @staticmethod
     def get_transforms():
         return transforms.Compose([
@@ -53,11 +54,13 @@ class CameraAugmentor:
         img_jpg = np.array(img_jpg)
         return img_jpg
 
+
     @staticmethod
     def gamma_manip(image, gamma):
         img_gamma = np.uint8(cv2.pow(image / 255., gamma) * 255.)
         return img_gamma
 
+        
     @staticmethod
     def bicubic_manip(image, scale):
         img_bicubic = cv2.resize(image, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)

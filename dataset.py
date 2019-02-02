@@ -8,9 +8,10 @@ TTA_COUNT = 11
 
 
 class CameraDataset(Dataset):
-    def __init__(self, path, augmentor, extend_dataset=False):        
+    def __init__(self, path, augmentor, extend_dataset=False):
+        
         self.df = pd.read_csv(path)
-        self.df = self.df.iloc[0:35]
+        self.df = self.df.sample(frac=.01)
         self.files = list(self.df['image_path'])
         self.labels = list(self.df['label'].astype(int))
         
@@ -30,10 +31,8 @@ class CameraDataset(Dataset):
                 
         self.augmentor = augmentor
     
-    
     def preprocess(self, index):
         path = self.files[index]
-        
         img = Image.open(path)
         img = np.array(img)
         

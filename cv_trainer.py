@@ -3,30 +3,27 @@ import datetime
 from dataset import CameraDataset
 from augmentation import CameraAugmentor
 from torch.utils.data import DataLoader
-from model import BuildModel, CameraModel
+from model import CameraArchitecture, CameraModel
 from torchvision.models import resnet50, resnet34
 from sklearn.metrics import log_loss, accuracy_score
 
 
-def train_fold(fold_id, epochs, batch_size, n_workers, src_dir='data', model_dir='models'):
-    fold_fn = 'fold_{}'.format(fold_id)
-    fold_fp = os.path.join(src_dir, fold_fn)
+def train_fold(cv_data_path, fold_id, epochs, batch_size, num_workers, model_dir='models'):
 
-    data_files = os.listdir(fold_fp)
-    train_fp = [os.path.join(fold_fp, fn) for fn in data_files if 'train' in fn][-1]
-    val_fp = [os.path.join(fold_fp, fn) for fn in data_files if 'val' in fn][-1]
+    train_path = os.path.join(cv_data_path, 'train_{}.csv'.format(fold_id))
+    val_path = os.path.join(cv_data_path, 'val_{}.csv'.format(fold_id))
 
     train_aug = CameraAugmentor(train_mode=True)
     val_aug = CameraAugmentor(train_mode=False)
 
-    train_ds = CameraDataset(train_fp, train_aug)
-    val_ds = CameraDataset(val_fp, val_aug)
+    train_ds = CameraDataset(train_path, train_aug)
+    val_ds = CameraDataset(val_path, val_aug)
     y_val = val_ds.get_labels()
 
-    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=n_workers)
-    val_dl = DataLoader(val_ds, batch_size=batch_size, num_workers=n_workers)
+    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_dl = DataLoader(val_ds, batch_size=batch_size, num_workers=num_workers)
 
-    model = BuildModel(resnet50)
+    model = CameraArchitecture(resnet50)
     camera_model = CameraModel(model)
 
     for epoch in range(epochs):
@@ -41,9 +38,9 @@ def train_fold(fold_id, epochs, batch_size, n_workers, src_dir='data', model_dir
         print("\nEpoch {0}: Val Accuracy {1:.6f}\tVal Loss {2:.6f}\tlr {3}\n".format(
             epoch+1, val_acc, val_loss, lr))
 
-    model_fn = 'camera_model_{0}.pth'.format(fold_id)
-    model_fp = os.path.join(model_dir, model_fn)
+    model_name = 'camera_model_{0}.pth'.format(fold_id)
+    model_path = os.path.join(model_dir, model_name)
     # model_fp = os.path.join(fold_fp, model_fn)
-    print("Saving model to {0} @ {1}\n".format(model_fp, 
+    print("Saving model to {0} @ {1}\n".format(model_path, 
         datetime.datetime.now().strftime("%H:%M:%S")))
-    camera_model.save(model_fp)
+    camera_model.save(model_path)

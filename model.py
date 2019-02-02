@@ -3,13 +3,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from callbacks import ReduceLROnPlateau
 from sklearn.metrics import log_loss, accuracy_score
 
 N_CLASSES = 10
 
         
-class BuildModel(nn.Module):
+class CameraArchitecture(nn.Module):
     def __init__(self, arch, weights_fp=None, pretrained=False):
         super().__init__()
         
@@ -60,8 +60,8 @@ class CameraModel:
         self.optimizer = torch.optim.Adam(self.model.parameters(), 
                                           lr=learning_rate)
         self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', 
-                                           factor=0.5, patience=5, min_lr=1e-6, 
-                                           eps=1e-5, verbose=1)
+                                           factor=0.5, patience=5, min_lr=1e-8, 
+                                           min_delta=1e-5, verbose=1)
         self._criterion = nn.CrossEntropyLoss()
     
     
@@ -118,7 +118,7 @@ class CameraModel:
         mean_acc = None
         mean_loss = None
         start_time = time.time()
-        for batch_idx, (X, y) in enumerate(data_loader):
+        for batch_num, (X, y) in enumerate(data_loader):
             y_pred = self.train_on_batch(X, y)
             y = y.cpu().numpy()
             
@@ -132,7 +132,7 @@ class CameraModel:
             elapsed_time = datetime.timedelta(seconds=elapsed_time)
             print("[{0}] Train step {1}/{2}\tLoss: {3:.6f}\tAccuracy: {4:.6f}".format(
                 elapsed_time,
-                batch_idx + 1,
+                batch_num + 1,
                 batches_per_epoch,
                 mean_loss,
                 mean_acc
@@ -142,15 +142,19 @@ class CameraModel:
     def predict(self, data_loader):
         self.set_predict_mode()
         preds = []
+        batches_per_dl = len(data_loader)
         start_time = time.time()
+
         for batch_num, X in enumerate(data_loader):
             if type(X) == list:
                 X = X[0]
-            
+
             y_pred = self.predict_on_batch(X)
             preds.append(y_pred)
-        elapsed_time = time.time() - start_time
-#            print("[{0:.2f}m] Predict step {1}\t ".format(elapsed_time, batch_num))
+            elapsed_time = round(time.time() - start_time)
+            elapsed_time = datetime.timedelta(seconds=elapsed_time)
+            print("[{0}] Predict step {1}/{2}\t ".format(
+                elapsed_time, batch_num, batches_per_dl))
         
         return np.concatenate(preds)
     

@@ -1,59 +1,66 @@
 import os
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import StratifiedKFold
 import datetime
 
 
-def create_kfold_data(src_dir, train_fn, k=5):
-    for fold_id in range(k):
-        DATA_PATH = os.path.join(src_dir, train_fn)
-        FOLD_DIR_NAME = "fold_{0}".format(fold_id + 1)
-        FOLD_PATH = os.path.join(src_dir, FOLD_DIR_NAME)
-        if not os.path.exists(FOLD_PATH):
-            os.mkdir(FOLD_PATH)
-        
-        train_test_even_split(DATA_PATH, shuffle=True, path_out=FOLD_PATH)
-
-        
-def train_test_even_split(path_in, train_frac=0.9, shuffle=False, path_out=''):
-    df = pd.DataFrame()
-
-    for label, dir_fn in enumerate(os.listdir(path_in)):
-        # place some encoder here for dir_fn -> label
-        dir_fp = os.path.join(path_in, dir_fn)
-        files = [os.path.join(dir_fp, fn) for fn in os.listdir(dir_fp)]
-        df_tmp = pd.DataFrame({'image_path': files, 'label': label})
-        df = pd.concat((df, df_tmp))
-
-    n_classes = df['label'].nunique()
-    if shuffle:
-        df = df.sample(frac=1).reset_index(drop=True)
-
-    N = df.shape[0]
-    n_train = np.floor(N * train_frac).astype(int)
-    n_per_class = np.floor(n_train / n_classes).astype(int)
-
-    df_train = df.groupby('label')['image_path'].apply(lambda x: x.iloc[:n_per_class])
-    df_train = df_train.reset_index().drop('level_1', axis=1)
-    df_val = df.groupby('label')['image_path'].apply(lambda x: x.iloc[n_per_class:])
-    df_val = df_val.reset_index().drop('level_1', axis=1)
+def save_full_train(src_dir, train_dir, filename_out, extra_dir=None):
+    """Saves all train image paths to a DataFrame with corresponding labels"""
+    TRAIN_PATH = os.path.join(src_dir, train_dir)
+    if extra_dir:
+        EXTRA_PATH = os.path.join(src_dir, extra_dir)
+        train_path_list = [TRAIN_PATH, EXTRA_PATH]
+    else:
+        train_path_list = [TRAIN_PATH]
     
-    csv_suffix = datetime.datetime.now().strftime('_%Y_%m_%d.csv')
-    train_fp = os.path.join(path_out, 'train' + csv_suffix)
-    val_fp = os.path.join(path_out, 'val' + csv_suffix)
+    df_full = pd.DataFrame()
+    for path in train_path_list:
+        for dir_name in os.listdir(path):
+            DIR_PATH = os.path.join(path, dir_name)
+            filenames = os.listdir(DIR_PATH)
+            filepaths = [os.path.join(DIR_PATH, fn) for fn in filenames]
+            target = target_map[dir_name]
+            df_tmp = pd.DataFrame({'image_path': filepaths,
+                                   'label': target})
+            df_full = pd.concat((df_full, df_tmp))
     
-    # save cv dataframes to disk
-    df_train.to_csv(train_fp, index=False)
-    df_val.to_csv(val_fp, index=False)
+    path_out = os.path.join(src_dir, filename_out)
+    print("Saving full train DataFrame to {}".format(path_out))
+    df_full.to_csv(path_out, index=False)
+    
+
+def save_kfold_data(src_dir, train_fn, dir_out, k=5):
+    """Saves `k` fold train/validation DataFrames to `dir_out`"""
+    dir_path_out = os.path.join(src_dir, dir_out)
+    if not os.path.exists(dir_path_out):
+        os.mkdir(dir_path_out)
+    
+    skf = StratifiedKFold(n_splits=5)
+    
+    skf_gen = skf.split(df_full['image_path'], df_full['label'])
+    for fold_id, (train_ind, val_ind) in enumerate(skf_gen):
+        df_train = df_full.iloc[train_ind]
+        df_val = df_full.iloc[val_ind]
+
+        csv_suffix = '_{}.csv'.format(fold_id + 1)
+        filename = os.path.join(dir_path_out, 'train' + csv_suffix)
+
+        # save dataframes to disk
+        df_train.to_csv(os.path.join(dir_path_out, 'train' + csv_suffix),
+                        index=False)
+        df_val.to_csv(os.path.join(dir_path_out, 'val' + csv_suffix),
+                      index=False)
 
 
-def prep_test_data(src_dir, test_dir):
+def prep_test_data(src_dir, test_dir, test_data_name):
     TEST_PATH = os.path.join(src_dir, test_dir)
     filenames = os.listdir(TEST_PATH)
     files = [os.path.join(TEST_PATH, fn) for fn in filenames]
 
-    df = pd.DataFrame({'path': files, 'label': np.nan})
+    df = pd.DataFrame({'image_path': files, 'label': -1})
     
-    test_data_fn = 'test.csv'
-    test_data_fp = os.path.join(src_dir, test_data_fn)
-    df.to_csv(test_data_fp, index=False)
+    test_data_name = 'test.csv'
+    test_data_path = os.path.join(src_dir, test_data_name)
+    print("Saving full test DataFrame to {}".format(test_data_path))
+    df.to_csv(test_data_path, index=False)
