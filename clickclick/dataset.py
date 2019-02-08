@@ -10,7 +10,6 @@ class CameraDataset(Dataset):
     def __init__(self, path, augmentor, n_tta=11, extend_dataset=False):
         
         self.df = pd.read_csv(path)
-        self.df = self.df.sample(frac=.01)
         self.files = list(self.df['image_path'])
         self.labels = list(self.df['label'].astype(int))
         self.n_tta = n_tta

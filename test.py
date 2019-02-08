@@ -43,7 +43,7 @@ def main():
 	camera_model = CameraModel(base_model)
 	pred_list = []
 
-	for i, model_path in enumerate(model_list[:2]):
+	for i, model_path in enumerate(model_list):
 		print("\n[{0}/{1}] Loading {2} for test prediction".format(
 			i+1, n_models, model_path))
 		camera_model.load(model_path)

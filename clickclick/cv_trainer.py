@@ -39,7 +39,6 @@ def train_fold(cv_data_path, fold_id, epochs, batch_size, num_workers, model_dir
 
     model_name = 'camera_model_{0}.pth'.format(fold_id)
     model_path = os.path.join(model_dir, model_name)
-    # model_fp = os.path.join(fold_fp, model_fn)
     print("Saving model to {0} @ {1}\n".format(model_path, 
         datetime.datetime.now().strftime("%H:%M:%S")))
     camera_model.save(model_path)
