@@ -2,13 +2,12 @@ import os
 import datetime
 import argparse
 import multiprocessing
-from cv_trainer import train_fold
-from utils import save_full_train, save_kfold_data
+from clickclick.cv_trainer import train_fold
+from clickclick.utils import save_full_train, save_kfold_data
 
 
 def main():
 	parser = argparse.ArgumentParser()
-
 	parser.add_argument('--src_dir', default='data')
 	parser.add_argument('--train_dir', default='train')
 	parser.add_argument('--extra_dir', default=None,
@@ -47,6 +46,8 @@ def main():
 		train_fold(cv_data_path=cv_path, fold_id=fold_id, 
 			epochs=args.num_epochs,  batch_size=args.batch_size,
 			num_workers=args.num_workers, model_dir=args.model_dir)
+
+	print("Finished script @ {}".format(datetime.datetime.now().strftime("%H:%M:%S")))
 
 
 if __name__ == '__main__':

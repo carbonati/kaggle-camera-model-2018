@@ -4,22 +4,23 @@ import os
 import argparse
 import datetime
 import pandas as pd
-from utils import prep_test_data
-from augmentation import CameraAugmentor
-from dataset import CameraDataset
+from clickclick.utils import prep_test_data
+from clickclick.augmentation import CameraAugmentor
+from clickclick.dataset import CameraDataset
+from clickclick.model import CameraArchitecture, CameraModel
+from clickclick.postprocessing import generate_submission
 from torch.utils.data import DataLoader
-from model import CameraArchitecture, CameraModel
 from torchvision.models import resnet50
 import multiprocessing
-
 
 
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--src_dir', default='data')
 	parser.add_argument('--test_dir', default='test')
-	parser.add_argument('--model_dir', required=True)
 	parser.add_argument('--full_test_name', default='test.csv')
+	parser.add_argument('--model_dir', required=True)
+	parser.add_argument('--submission_path', required=True)
 	parser.add_argument('--num_workers', type=int, default=multiprocessing.cpu_count())
 	parser.add_argument('--batch_size', type=int, default=64)
 	
@@ -27,10 +28,8 @@ def main():
 	args = parser.parse_args()
 
 	full_test_path = os.path.join(args.src_dir, args.full_test_name)
-
 	if not os.path.exists(full_test_path):
 		prep_test_data(args.src_dir, args.test_dir, full_test_path)
-	
 	
 	test_aug = CameraAugmentor(train_mode=False)
 	test_ds = CameraDataset(full_test_path, test_aug, extend_dataset=True)
@@ -45,18 +44,18 @@ def main():
 	pred_list = []
 
 	for i, model_path in enumerate(model_list[:2]):
-		print("[{0}/{1}] Loading {2} for test prediction".format(
+		print("\n[{0}/{1}] Loading {2} for test prediction".format(
 			i+1, n_models, model_path))
 		camera_model.load(model_path)
 		preds = camera_model.predict(test_dl)
 		pred_list.append(preds)
 
-	print('saving preds')
-	with open('data/preds.p', 'wb') as f:
-		pickle.dump(pred_list, f)
-	pred_list = np.array(pred_list)
-	np.save('data/preds.npy', pred_list)
-	## call some postprocessing function
+	test_filenames = test_ds.get_filenames()
+	generate_submission(pred_list, filenames=test_filenames, 
+						output_path=args.submission_path)
+
+	print("Finished script @ {}".format(datetime.datetime.now().strftime("%H:%M:%S")))
+
 
 if __name__ == '__main__':
 	main()
