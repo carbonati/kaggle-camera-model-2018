@@ -6,6 +6,6 @@ This solution is modeled after Pavel Ostyakov's [5th place solution](https://www
 The competition was launched well before I began working on my solution, but serves as a fun point of reference for me to practice on computer vision related problems.
 
 ### Performance
-<b>Public LB</b>:
+<b>Public LB</b>: 0.98732
 
-<b>Private LB</b>:
+<b>Private LB</b>: 0.98689
